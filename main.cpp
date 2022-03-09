@@ -1,6 +1,7 @@
 #include <iostream>
 #include "IHttpService.h"
 #include "AsyHttpService.h"
+#include "Server.h"
 void aaa(CHttp::IHttpService *service) {
     CHttp::Request request;
     CHttp::URL url;
@@ -17,7 +18,9 @@ int main() {
 //    aaa(&service);
     AsyHttpService *http = AsyHttpService::getInstance();
 
-    string url = "http://163.177.151.109";
+    //string url = "http://163.177.151.109";
+    string url = "http://localhost:9000/web_api/api/qualitygates/project_status?projectId=AXx3vsRDyLZyf35jKNnh";
+
     string return_msg;
     if (http->httpGet(url , return_msg))
     {

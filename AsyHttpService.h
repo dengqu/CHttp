@@ -17,6 +17,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
+#include "thread/IThread.h"
 
 #define BUFSIZE 4096
 #define URLSIZE 2048

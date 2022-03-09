@@ -25,6 +25,7 @@ namespace CHttp {
     }
 
     int AsyHttpService::httpGet(string strUrl, string &strResponse) {
+        //IThread("Test").start();
         return httpResquestExec("GET", strUrl, "", strResponse);
     }
 

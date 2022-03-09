@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.17)
 project(CHttp)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(CHttp main.cpp URL.h Request.h Response.h IHttpService.h AsyHttpService.cpp AsyHttpService.h thread/IThread.cpp thread/IThread.h)
+add_executable(CHttp main.cpp URL.h Request.h Response.h IHttpService.h AsyHttpService.cpp AsyHttpService.h thread/IThread.cpp thread/IThread.h thread/ThreadPool.cpp thread/ThreadPool.h Server.cpp Server.h)
