@@ -4,6 +4,7 @@
 
 #include "AsyHttpService.h"
 #include <iostream>
+#include <vector>
 
 namespace CHttp {
     using namespace std;
@@ -48,8 +49,9 @@ namespace CHttp {
         //创建HTTP协议表头
         string strHttpHead = httpHeadCreate(strMethod, strUrl, strData);
 
+        int totalLength;
         if (m_iSocketFd != INVALID_SOCKET) {
-            string strResult = httpDataTransmit(strHttpHead, m_iSocketFd);
+            string strResult = httpDataTransmit(strHttpHead, m_iSocketFd, totalLength);
             if (strResult != "") {
                 strResponse = strResult;
                 return 1;
@@ -97,7 +99,7 @@ namespace CHttp {
         //非阻塞方式连接
         int iRet = connect(m_iSocketFd, (struct sockaddr *) &servaddr, sizeof(servaddr));
         if (iRet == 0) {
-            string strResult = httpDataTransmit(strHttpHead, m_iSocketFd);
+            string strResult = httpDataTransmit(strHttpHead, m_iSocketFd, totalLength);
             if (NULL == strResult.c_str()) {
                 close(m_iSocketFd);
                 m_iSocketFd = INVALID_SOCKET;
@@ -114,14 +116,25 @@ namespace CHttp {
 
         iRet = socketFdCheck(m_iSocketFd);
         if (iRet > 0) {
-            string strResult = httpDataTransmit(strHttpHead, m_iSocketFd);
+            string strResult = httpDataTransmit(strHttpHead, m_iSocketFd, totalLength);
             if (strResult == "") {
                 close(m_iSocketFd);
                 m_iSocketFd = INVALID_SOCKET;
                 return 0;
             } else {
-                strResponse = strResult;
+                const char *content = strResult.c_str();
+                cout << "totalLength = " << totalLength << endl;
+                int headerLength = getHeaderLength(const_cast<char *>(content));
+                cout << "headerLength = " << headerLength << endl;
+                int bodyLength = totalLength - headerLength;
+                cout << "bodyLength = " << bodyLength << endl;
+                char *bodyContent = new char[bodyLength];
+                memcpy(bodyContent, content + headerLength, bodyLength);
+                cout << "bodyContent = " << bodyContent << endl;
+                int contentLength = getContentLength(content);
+                string bodyContentStr(bodyContent);
 
+                strResponse = bodyContentStr.substr(0,contentLength);
                 return 1;
             }
         } else {
@@ -132,6 +145,61 @@ namespace CHttp {
         return 1;
     }
 
+    int AsyHttpService::getHeaderLength(char *content) {
+        const char *srchStr1 = "\r\n\r\n", *srchStr2 = "\n\r\n\r";
+        char *findPos;
+        int ofset = -1;
+
+        findPos = strstr(content, srchStr1);
+        if (findPos != NULL) {
+            ofset = findPos - content;
+            ofset += strlen(srchStr1);
+        } else {
+            findPos = strstr(content, srchStr2);
+            if (findPos != NULL) {
+                ofset = findPos - content;
+                ofset += strlen(srchStr2);
+            }
+        }
+        return ofset;
+    }
+
+    int AsyHttpService::getContentLength(const char *content) {
+        string s = "\n";
+        string contetLengthStart = "Content-Length: ";
+        vector<string> result = split(content, s);
+        if (result.size() > 0) {
+            for (string line : result) {
+                if (line.find(contetLengthStart) == 0) {
+                    int contetLength = stoi(line.substr(contetLengthStart.length()));
+                    cout << "Content-Length = " << contetLength << endl;
+                    return contetLength;
+                }
+            }
+        }
+        return -1;
+    }
+
+    vector<string> AsyHttpService::split(const string &str, const string &pattern) {
+        vector<string> res;
+        if (str == "")
+            return res;
+        //在字符串末尾也加入分隔符，方便截取最后一段
+        string strs = str + pattern;
+        size_t pos = strs.find(pattern);
+
+        while (pos != strs.npos) {
+            string temp = strs.substr(0, pos);
+            //cout << "temp = " << temp << endl;
+            res.push_back(temp);
+            //去掉已分割的字符串,在剩下的字符串中进行分割
+            strs = strs.substr(pos + 1, strs.size());
+            pos = strs.find(pattern);
+        }
+
+        return res;
+    }
+
     string AsyHttpService::httpHeadCreate(string strMethod, string strUrl, string strData) {
         string strHost = getHostAddFromUrl(strUrl);
         string strParam = getParamFromUrl(strUrl);
@@ -140,7 +208,7 @@ namespace CHttp {
         strHttpHead.append(strMethod);
         strHttpHead.append(" /");
         strHttpHead.append(strParam);
-        strHttpHead.append(" HTTP/2.0\r\n");
+        strHttpHead.append(" HTTP/1.1\r\n");
         strHttpHead.append("Accept: */*\r\n");
         strHttpHead.append("Accept-Language: cn\r\n");
         strHttpHead.append("User-Agent: Mozilla/4.0\r\n");
@@ -154,7 +222,7 @@ namespace CHttp {
             unsigned long iLen = strData.size();
             sprintf(len, "%lu", iLen);
 
-            strHttpHead.append("Content-Type: application/x-www-form-urlencoded\r\n");
+            strHttpHead.append("Content-Type: application/json\r\n");
             strHttpHead.append("Content-Length: ");
             strHttpHead.append(len);
             strHttpHead.append("\r\n\r\n");
@@ -166,11 +234,12 @@ namespace CHttp {
     }
 
 //发送HTTP请求并且接受响应
-    string AsyHttpService::httpDataTransmit(string strHttpHead, int isSocFd) {
+    string AsyHttpService::httpDataTransmit(string strHttpHead, int isSocFd, int &totalLenght) {
         char *buf = (char *) malloc(BUFSIZ);
         memset(buf, 0, BUFSIZ);
         char *head = (char *) strHttpHead.data();
         long ret = send(isSocFd, (void *) head, strlen(head) + 1, 0);
+        totalLenght = ret;
         if (ret < 0) {
             debugOut("send error ! Error code: %d,Error message: %s\n", errno, strerror(errno));
             close(isSocFd);
@@ -178,6 +247,7 @@ namespace CHttp {
         }
         while (1) {
             ret = recv(isSocFd, (void *) buf, BUFSIZ, 0);
+            totalLenght = ret;
             if (ret == 0) {
                 close(isSocFd);
                 free(buf);

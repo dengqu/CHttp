@@ -50,7 +50,7 @@ namespace CHttp {
 
         string httpHeadCreate(string strMethod, string strUrl, string strData);
 
-        string httpDataTransmit(string strHttpHead, int isSocFd);
+        string httpDataTransmit(string strHttpHead, int isSocFd, int &totalLenght);
 
         int getPortFromUrl(string strUrl);
 
@@ -61,6 +61,12 @@ namespace CHttp {
         string getHostAddFromUrl(string strUrl);
 
         int socketFdCheck(const int iSockFd);
+
+        int getHeaderLength(char *content);
+
+        vector<string> split(const string &str, const string &pattern);
+
+        int getContentLength(const char *content);
 
         static int m_iSocketFd;
     };

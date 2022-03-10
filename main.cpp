@@ -19,12 +19,12 @@ int main() {
     AsyHttpService *http = AsyHttpService::getInstance();
 
     //string url = "http://163.177.151.109";
-    string url = "http://localhost:9000/web_api/api/qualitygates/project_status?projectId=AXx3vsRDyLZyf35jKNnh";
+    string url = "http://47.74.94.1:8080/carServer/ConfigController/getCdnConfig";
 
     string return_msg;
     if (http->httpGet(url , return_msg))
     {
-        cout << return_msg <<endl;
+        cout << "response = " << return_msg <<endl;
     }
     return 0;
 }
