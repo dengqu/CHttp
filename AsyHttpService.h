@@ -17,7 +17,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
-
+#include <pthread.h>
 #define BUFSIZE 4096
 #define URLSIZE 2048
 #define INVALID_SOCKET -1

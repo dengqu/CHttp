@@ -3,6 +3,14 @@
 #include "AsyHttpService.h"
 #include "thread/ThreadPool.h"
 #include "Server.h"
+#include "include/rapidjson/document.h"
+#include "include/AIGCJson.h"
+
+class Restult {
+public:
+    int code;
+    AIGC_JSON_HELPER(code);// 注册成员
+};
 
 void aaa(CHttp::IHttpService *service) {
     CHttp::Request request;
@@ -19,6 +27,9 @@ std::function<void()> bbb() {
     std::string return_msg;
     if (http->httpGet(url, return_msg)) {
         std::cout << "response = " << return_msg << std::endl;
+        Restult restult;
+        aigc::JsonHelper::JsonToObject(restult, return_msg);
+        std::cout << "code = " << restult.code << std::endl;
     }
 }
 
